@@ -17,6 +17,7 @@ from typing import Optional, Tuple, List
 
 # ===================== PORTABLE CONFIG =====================
 def app_dir() -> Path:
+    """Return the directory containing the running executable or script."""
     if getattr(sys, "frozen", False) and hasattr(sys, "executable"):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
@@ -28,9 +29,11 @@ MANIFEST_GLOB     = "**/backup_manifest_*.json"       # recursive search under B
 # ===========================================================
 
 def now_stamp() -> str:
+    """Timestamp string used for folder names and logs."""
     return time.strftime("%Y%m%d-%H%M%S")
 
 def log(msg: str):
+    """Append a message to the log file with a timestamp."""
     try:
         BASE_DIR.mkdir(parents=True, exist_ok=True)
         with LOG_FILE.open("a", encoding="utf-8", errors="ignore") as f:
@@ -39,9 +42,11 @@ def log(msg: str):
         print(msg, file=sys.stderr)
 
 def sanitize_name(name: str) -> str:
+    """Return a filesystem-safe version of *name*."""
     return re.sub(r"[^A-Za-z0-9_\-]+", "_", name.strip()) or "item"
 
 def to_winlong(p: Path) -> Path:
+    """Add the Windows long-path prefix when needed."""
     s = str(p)
     if os.name == "nt" and not s.startswith("\\\\?\\") and len(s) >= 248:
         if s.startswith("\\\\"):
@@ -51,13 +56,16 @@ def to_winlong(p: Path) -> Path:
     return Path(s)
 
 def ensure_dir(path: Path):
+    """Create *path* and its parents if they do not already exist."""
     path.mkdir(parents=True, exist_ok=True)
 
 def copy_file(src: Path, dst: Path):
+    """Copy a single file preserving metadata."""
     ensure_dir(dst.parent)
     shutil.copy2(src, dst)
 
 def copy_dir_tree(src: Path, dst: Path):
+    """Recursively copy directory *src* into *dst*, replacing any existing tree."""
     src = to_winlong(src)
     dst = to_winlong(dst)
     if Path(dst).exists():
@@ -87,14 +95,17 @@ def restore_copy(src: Path, dst: Path):
         copy_file(Path(src), Path(dst))
 
 def parse_manifest_timestamp_from_name(name: str) -> Optional[str]:
+    """Extract the timestamp component from a manifest filename."""
     m = re.match(r"backup_manifest_[A-Za-z0-9_\-]*_(\d{8}-\d{6})\.json$", name, flags=re.IGNORECASE)
     return m.group(1) if m else None
 
 def extract_prefix_from_manifest_filename(name: str) -> Optional[str]:
+    """Return the prefix portion from a manifest filename."""
     m = re.match(r"backup_manifest_([A-Za-z0-9_\-]+)_(\d{8}-\d{6})\.json$", name, flags=re.IGNORECASE)
     return m.group(1) if m else None
 
 def ts_to_epoch(ts: str) -> float:
+    """Convert 'YYYYmmdd-HHMMSS' into epoch seconds."""
     try:
         st = time.strptime(ts, "%Y%m%d-%H%M%S")
         return time.mktime(st)
@@ -121,6 +132,7 @@ def backup_root_seems_valid(backup_root: Path) -> bool:
         return False
 
 def find_latest_manifest_in_base(base: Path, prefix: str) -> Optional[Path]:
+    """Search *base* for the newest manifest matching *prefix*."""
     if not base.exists():
         log(f"[INFO] Manifest base not found: {base}")
         return None
@@ -173,9 +185,11 @@ def find_latest_manifest_in_base(base: Path, prefix: str) -> Optional[Path]:
     return latest
 
 def find_latest_manifest(prefix: str) -> Optional[Path]:
+    """Convenience wrapper to search the default base directory."""
     return find_latest_manifest_in_base(BASE_DIR, prefix)
 
 def restore_from_manifest(manifest_path: Path) -> bool:
+    """Restore items described by the given manifest."""
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
     except Exception as e:
@@ -237,6 +251,7 @@ def restore_from_manifest(manifest_path: Path) -> bool:
     return ok_all
 
 def main():
+    """Entry point when executed as a script."""
     try:
         log("=== Auto Restore (portable) ===")
         log(f"[INFO] BASE_DIR: {BASE_DIR}")

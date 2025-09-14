@@ -50,9 +50,11 @@ MANIFEST_DIR = PROGRAM_ROOT          # keep manifests right next to EXE
 # ---------------------------- Helpers ----------------------------
 
 def now_stamp() -> str:
+    """Return current timestamp as YYYYmmdd-HHMMSS."""
     return time.strftime("%Y%m%d-%H%M%S")
 
 def clean_path(p: str) -> str:
+    """Expand and normalize a user-supplied path string."""
     if not p:
         return ""
     s = p.strip()
@@ -68,9 +70,11 @@ def clean_path(p: str) -> str:
     return s
 
 def ensure_dir(path: Path) -> None:
+    """Create *path* and any missing parent directories."""
     path.mkdir(parents=True, exist_ok=True)
 
 def sanitize_name(name: str) -> str:
+    """Return a safe directory name derived from *name*."""
     s = re.sub(r"[^A-Za-z0-9_\-]+", "_", name.strip())
     return s or "item"
 
@@ -119,6 +123,7 @@ def to_winlong(p: Path) -> Path:
 # ---------------------------- Copying primitives ----------------------------
 
 def copy_file(src: Path, dst: Path) -> None:
+    """Copy *src* file to *dst*, preserving metadata."""
     ensure_dir(dst.parent)
     shutil.copy2(src, dst)
 
@@ -173,6 +178,7 @@ def copy_folder_contents(src_dir: Path, dst_dir: Path, bump: Optional[Callable[[
                 bump()
 
 def count_files_for_progress(path: Path) -> int:
+    """Return approximate file count for progress reporting."""
     path = Path(path)
     if path.is_dir():
         total = 0
@@ -224,6 +230,7 @@ def restore_copy(src: Path, dst: Path, overwrite: bool = True):
 # ---------------------------- Config ----------------------------
 
 def load_config() -> dict:
+    """Load configuration from disk, returning an empty dict if unavailable."""
     if CONFIG_FILE.exists():
         try:
             return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
@@ -232,6 +239,7 @@ def load_config() -> dict:
     return {}
 
 def save_config(new_cfg: dict):
+    """Persist configuration dictionary to disk."""
     try:
         cfg = load_config()
         cfg.update(new_cfg)
